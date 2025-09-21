@@ -11,6 +11,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.v1.router import router as api_v1_router
 from src.core.config import settings
 from src.core.events import create_start_app_handler, create_stop_app_handler
+from src.core.exceptions import register_exception_handlers
 from src.core.logging import setup_logging
 
 
@@ -65,6 +66,9 @@ def create_application() -> FastAPI:
 
     # Include routers
     application.include_router(api_v1_router, prefix=settings.API_PREFIX)
+
+    # Register global exception handlers
+    register_exception_handlers(application)
 
     return application
 

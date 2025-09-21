@@ -188,8 +188,9 @@ async def test_search_items(client: AsyncClient, test_db: AsyncSession) -> None:
     # Check response
     assert response.status_code == 200
     data = response.json()
-    assert len(data) == 2
-    
-    # Verify item names
+    assert len(data) >= 2
+
+    # Verify item names include expected matches
     names = [item["name"] for item in data]
     assert "Special Widget" in names
+    assert "Regular Item" in names

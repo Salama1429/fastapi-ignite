@@ -4,13 +4,18 @@ API v1 router configuration
 from fastapi import APIRouter
 from src.core.config import settings
 
-from src.api.v1.endpoints import items
+from src.api.v1.endpoints import billing, ingestion, items, limits, query, tenants
 
 # Create the v1 router
-router = APIRouter()
+router = APIRouter(prefix="/v1")
 
 # Include all endpoint routers
 router.include_router(items.router)
+router.include_router(billing.router)
+router.include_router(ingestion.router)
+router.include_router(query.router)
+router.include_router(limits.router)
+router.include_router(tenants.router)
 
 # Add health check endpoint directly to v1 router
 @router.get("/health", tags=["health"])
