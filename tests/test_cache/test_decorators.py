@@ -29,7 +29,7 @@ async def test_cached_decorator():
         return {"a": a, "b": b}
     
     # Call function first time (should miss cache)
-    result1 = await test_function(1, "test", redis=mock_redis)
+    result1 = await test_function(1, "test", cache=mock_redis)
     assert result1 == {"a": 1, "b": "test"}
     assert call_count == 1
     
@@ -46,7 +46,7 @@ async def test_cached_decorator():
     mock_redis.get.return_value = '{"a": 1, "b": "test"}'
     
     # Call function second time with same args (should hit cache)
-    result2 = await test_function(1, "test", redis=mock_redis)
+    result2 = await test_function(1, "test", cache=mock_redis)
     assert result2 == {"a": 1, "b": "test"}
     
     # Function should not have been called again
@@ -63,7 +63,7 @@ async def test_cached_decorator():
     
     # Call function with different args (should miss cache)
     mock_redis.get.return_value = None
-    result3 = await test_function(2, "test", redis=mock_redis)
+    result3 = await test_function(2, "test", cache=mock_redis)
     assert result3 == {"a": 2, "b": "test"}
     
     # Function should have been called again
@@ -100,7 +100,7 @@ async def test_cache_key_builder():
         return {"user_id": user_id, "action": action}
     
     # Call function
-    result = await test_function(user_id="123", action="test", redis=mock_redis)
+    result = await test_function(user_id="123", action="test", cache=mock_redis)
     assert result == {"user_id": "123", "action": "test"}
     assert call_count == 1
     

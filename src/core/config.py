@@ -155,12 +155,59 @@ class CacheSettings(BaseModel):
 
 class SchedulerSettings(BaseModel):
     enabled: bool = True  # Whether to enable the APScheduler
-    
+
     # Override from environment variables
     @model_validator(mode='after')
     def override_from_env(self) -> "SchedulerSettings":
         if os.environ.get("SCHEDULER_ENABLED"):
             self.enabled = os.environ.get("SCHEDULER_ENABLED").lower() == "true"
+        return self
+
+
+class OpenAISettings(BaseModel):
+    api_key: str = Field("", description="OpenAI API Key")
+    default_model: str = Field("gpt-4o-mini", description="Default OpenAI model")
+
+    @model_validator(mode='after')
+    def override_from_env(self) -> "OpenAISettings":
+        if "OPENAI_API_KEY" in os.environ:
+            self.api_key = os.environ["OPENAI_API_KEY"]
+        if "OPENAI_MODEL_DEFAULT" in os.environ:
+            self.default_model = os.environ["OPENAI_MODEL_DEFAULT"]
+        return self
+
+
+class AuthSettings(BaseModel):
+    jwt_secret: str = Field(
+        "change-me", description="Secret used for verifying JWT access tokens"
+    )
+    jwt_algorithm: str = Field(
+        "HS256", description="Algorithm used to decode JWT access tokens"
+    )
+
+    @model_validator(mode="after")
+    def override_from_env(self) -> "AuthSettings":
+        if "JWT_SECRET" in os.environ:
+            self.jwt_secret = os.environ["JWT_SECRET"]
+        if "JWT_ALG" in os.environ:
+            self.jwt_algorithm = os.environ["JWT_ALG"]
+        return self
+
+
+class LimitSettings(BaseModel):
+    default_plan_messages: int = Field(
+        2000, description="Default monthly message allocation for tenants"
+    )
+    rate_limit_rpm: int = Field(
+        120, description="Requests per minute allowed for a single tenant"
+    )
+
+    @model_validator(mode="after")
+    def override_from_env(self) -> "LimitSettings":
+        if "DEFAULT_PLAN_MESSAGES" in os.environ:
+            self.default_plan_messages = int(os.environ["DEFAULT_PLAN_MESSAGES"])
+        if "RATE_LIMIT_RPM" in os.environ:
+            self.rate_limit_rpm = int(os.environ["RATE_LIMIT_RPM"])
         return self
 
 
@@ -188,6 +235,9 @@ class Settings(BaseSettings):
     dramatiq: DramatiqSettings = DramatiqSettings()
     cache: CacheSettings = CacheSettings()
     scheduler: SchedulerSettings = SchedulerSettings()
+    openai: OpenAISettings = OpenAISettings()
+    auth: AuthSettings = AuthSettings()
+    limits: LimitSettings = LimitSettings()
     
     # Computed properties
     DATABASE_URI: Optional[PostgresDsn] = None
@@ -328,6 +378,30 @@ class Settings(BaseSettings):
         from pathlib import Path
         base_path = Path(__file__).parent.parent.parent
         return str(base_path / self.cache.file_path)
+
+    @property
+    def OPENAI_API_KEY(self) -> str:
+        return self.openai.api_key
+
+    @property
+    def OPENAI_MODEL_DEFAULT(self) -> str:
+        return self.openai.default_model
+
+    @property
+    def JWT_SECRET(self) -> str:
+        return self.auth.jwt_secret
+
+    @property
+    def JWT_ALG(self) -> str:
+        return self.auth.jwt_algorithm
+
+    @property
+    def DEFAULT_PLAN_MESSAGES(self) -> int:
+        return self.limits.default_plan_messages
+
+    @property
+    def RATE_LIMIT_RPM(self) -> int:
+        return self.limits.rate_limit_rpm
 
 
 @lru_cache()

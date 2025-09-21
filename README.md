@@ -111,6 +111,32 @@
 
 See [DEVELOPER GUIDE](DEVELOPER-GUIDE.md) for detailed development information.
 
+## Integrating a Shipfa.st Next.js Frontend
+
+The project plays well with modern TypeScript frontends such as the [shipfa.st Next.js boilerplate](https://shipfa.st/). A typical integration flow looks like this:
+
+1. **Configure shared environment variables**
+   - Expose the FastAPI base URL (e.g., `http://localhost:8000/api`) to the Next.js app via `NEXT_PUBLIC_API_BASE_URL`.
+   - Add authentication secrets (e.g., JWT signing secret) to both the backend `.env` file and the Shipfa.st `.env.local` file so the frontend can mint or validate session tokens as needed.
+
+2. **Generate typed API clients**
+   - Run `pnpm openapi-typescript` (or your preferred generator) against the FastAPI OpenAPI schema at `http://localhost:8000/api/openapi.json` to create reusable TypeScript clients in the Shipfa.st app.
+   - Consider colocating the generated clients under `apps/web/lib/api` and re-running the generator as part of the frontend build step to keep SDKs up to date.
+
+3. **Implement tenant-aware fetch helpers**
+   - In the Next.js app, wrap `fetch` (or `@tanstack/query` hooks) to automatically attach tenant headers (e.g., `Authorization: Bearer <jwt>` or custom `X-Tenant-Id` headers) for every request to the FastAPI backend.
+   - Store active project or tenant identifiers in Shipfa.st's global state (Zustand/Redux) or in URL segments so each page shares consistent context when calling ingestion or query endpoints.
+
+4. **Leverage Shipfa.st UI primitives**
+   - Use the boilerplate's dashboard layout and component library to surface onboarding flows (project creation, file uploads, quota displays) that correspond to the backend endpoints under `/api/v1/ingestion`, `/api/v1/query`, `/api/v1/limits`, and `/api/v1/billing`.
+   - Bridge real-time status updates (upload progress, query responses) with Shipfa.st's built-in toast/notification system for cohesive UX feedback.
+
+5. **Local development workflow**
+   - Start the FastAPI server with `python cli.py api --reload` and the Next.js app with `pnpm dev` (or `npm run dev`) in the Shipfa.st repository.
+   - Enable CORS for the frontend origin by setting `BACKEND_CORS_ORIGINS` in `.env` (comma-separated list). This allows the Next.js dev server to access FastAPI endpoints without manual proxying.
+
+Document any additional integration steps that are specific to your deployment (e.g., shared authentication providers, deployment pipelines) so the backend and frontend teams can stay aligned.
+
 ## License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
